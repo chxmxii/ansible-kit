@@ -1,0 +1,7 @@
+#This role is part of the coral-io cluster template
+galaxy_info:
+  author: chxmxii 
+  email: chamsii.mouhib@gmail.com 
+  description: x
+  license: x
+  min_ansible_version: x

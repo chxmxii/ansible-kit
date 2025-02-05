@@ -1,0 +1,45 @@
+---
+- name: Retrieve Cluster Namespaces
+  ansible.builtin.command: kubectl get ns -ocustom-columns=:.metadata.name 
+  register: cluster_namespaces
+  changed_when: false
+
+- ansible.builtin.debug:
+    var: cluster_namespaces.stdout_lines
+
+- name: Install ArgoCD 
+  block:
+    - name: Create ArgoCD Namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        state: present
+        name: "{{ argocd_namespace }}"
+        kind: Namespace
+
+    - name: Download argocd manifest file. 
+      ansible.builtin.get_url:
+        url: "{{ argocd_manifests }}"
+        dest: /tmp/argocd.yml
+        owner: root
+        group: root
+        mode: '0440'
+    
+    - name: Deploy ArgoCD
+      kubernetes.core.k8s:
+        namespace: "{{ argocd_namespace }}"
+        state: present
+        src: /tmp/argocd.yml
+  always:
+    - name: Clean Installation
+      ansible.builtin.file:
+        path: /tmp/argocd.yml
+        state: absent 
+  when: argocd_namespace not in cluster_namespaces.stdout_lines
+
+- name: Install ArgoCD Command Line Tool
+  ansible.builtin.get_url:
+    url: "{{ argocd_cli_url }}"
+    dest: "{{ argocd_binary_path }}/argocd"
+    owner: root
+    group: root
+    mode: 0755
